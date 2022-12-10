@@ -1,0 +1,18 @@
+This folder contains the codes for project "Impact of quality of image database to the AI performance in skin cancer detection"
+
+1, Datasplit.py
+compare two csv files according to filename and directory, find the deleted, added, changed names of directories and insert into SQL database, update logfile
+2, Datasplit.sh
+bash code version of csv data processing / comparison
+pseudo code in pseudo_thesis.txt
+3, imagehash.py
+Hashing jpeg files in AI database and upload the information in SQL database, Compare lastest two imagehash tables, get same hashcode, different imagename/path and save as error.csv, updata logfile table in SQL.
+pseudo code in pseudo_thesis.txt
+4, L0L1_classification.py
+process the AI probalistic result into ROC curves and confusion matrix, prediction outcomes and their deviations.
+pseudo code in pseudo_thesis.txt
+
+** L0L1L2_classification.py available upon request
+5, effinet_test.py
+
+EfficientNet model for testing AI database

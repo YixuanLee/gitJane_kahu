@@ -1,0 +1,121 @@
+
+
+____________________________________________________________________________________________________
+Algorithm 1 : Data split and comparison
+____________________________________________________________________________________________________
+Input:  df1: old_status_image_db.csv
+        df2: new_status_image_db.csv
+
+Datasplit:
+	split col[name] into ['photo'],['L0'], ['L1'], ['L2'],['data_type']
+	output: splited df1,df2
+Data compare:
+	df1 outerjoin df2 on ['name']
+	df1_left_only <- df_delete # deleted records
+	df2_right_only <- df_extra #extra records including new and label change
+	df_extra[['name'] not in df1['name']] -> df_new # new images added
+	# label changed L0,L0 & L1,L0 & L1 & L2,L1,L1 & L2,L2,L0 & L2
+	# L0 change
+	df_L0 <- df_extra[['photo','L1','L2'] in df1['photo','L1','L2']] 
+	#L0 & L1 change
+	df_L0L1 <- df_extra[['photo','L2'] in df1['photo','L2'] AND ['L0,L1'] not in df1['L0,L1']]
+	# L0 & L1 & L2 change
+	df_L0L1L2 <- df_extra[['photo'] in df1['photo'] AND ['L0,L1,L2'] not in df1['L0,L1,L2']]
+	# L1 change
+	df_L1 <- df_extra[['photo','L0','L2'] in df1['photo','L0','L2']]
+	# L1 & L2 change 
+	df_L1L2 <- df_extra[['photo','L0'] in df1['photo','L0'] AND ['L1,L2'] not in df1['L1,L2']]
+	# L2 change
+	df_L2 <- df_extra[['photo','L0','L1'] in df1['photo','L0','L1']]
+	# L0 & L2 change
+	df_L0L2 <- df_extra[['photo','L1'] in df1['photo','L1'] AND ['L0,L2'] not in df1['L0,L2']]
+	
+	result <- concat(df_delete,df_new,df_L0,df_L0L1,df_L0,df_L0L1,df_L0L1L2,df_L1,
+		  df_L1L2, df_L2,df_L0L2)
+Database upload:
+	SQL connection settings
+	upload(result)
+	update logfile with username, appname, modification
+____________________________________________________________________________________________________
+
+__________________________________________________________________________________________
+Algorithm 2 : Image hashing and error tracking
+__________________________________________________________________________________________
+Input:  root_uri of AI database
+
+Imagehashing:
+	for path_root in root_uri.iterdir() do
+		for path, subdirs, filenames in path_root do
+			if file match pattern(.jpg)
+				full_path <- join (path,filename)
+				with open(full_path) as f do
+					bytes <- f.read()
+					hashcode <- hashlib.sha256(bytes)
+					output_imagehash <- list('name','path','hashcode')
+			end if
+		end for
+	end for
+
+Database upload:
+	SQL connection settings
+	upload(output_imagehash) as table imagehash'n' 
+Error tracking:
+	# compare result of imagehash with the last imagehash result
+	SQL_query( imagehash'n'['hashcode'] = imagehash'n-1'['hashcode'] AND 
+		   imagehash'n'['name'] <> imagehash'n-1'['name']
+	output SQL_query result as error.csv
+Logfile update:
+	update logfile with username, appname, No. of errors, error['name']
+___________________________________________________________________________________________
+
+___________________________________________________________________________________________
+Algorithm 3 : AI result analysis
+___________________________________________________________________________________________
+#column_names name(full_path + photo name), L0, L1, L2 labels with their AI scores
+# path represents the actual labels of each image file
+Input:  AI_result.csv
+
+	
+Namesplit: # to get the actual label of each image file	
+	split col[name] into L0, L1, L2 actual labels
+	df['L0_actual'] <- convert L0 labels to two classes 0 and 1
+	df['L1_actual'] <- convert L1 labels to four classes 0, 1, 2, 3
+	df['L2_actual'] <- convert L2 labels to nine classes 1 ~ 9
+	# group total 39 labels of L2 class to get sum of AI scores for each 9 subclasses
+	if 'pattern' in col_names in df:
+		df['L2_label'] <- df[col_names containing 'pattern'].sum_per_row
+	end if
+
+Binary_classification: # for two classes classification, 
+ 		       # eg. benign vs malignant, melanoma vs. non-melanoma
+	FPR, TPR, Threshold <- ROC_curve(df['actual_label'], df['predicted_label']
+	best_threshold <- threshold[tpr >=0.95]
+	# output predicted class
+	df[class_predicted] <- (0 if df['predicted_label'] < threshold else 1)	
+	output : df['L0_predicted'], df['L1_melanoma_predicted'],df['L2_melanoma_predicted']
+L1_classification: # for four classes L1 classification
+	df['L1_predicted'] = argmax(df['L1_columns']) # return indices of maximum values
+	df['L1_predicted][where df['L1_melanoma_predicted']=1, change class to melanoma]
+	output:  df['L1_predicted']
+L2_classification: # for nine classes L2 classification
+	df['L2_predicted'] = argmax(df['L2_columns']) # return indices of maximum values
+	df['L2_predicted][where df['L2_melanoma_predicted']=1, change class to melanoma]
+	output: df['L2_predicted']
+
+Performance_evaluation:
+	compute TP,FP,TN,FN,TPR,TNR,1/PPV, NPV, FPR, FNR, Accuracy, PT
+Plot_confusion_matrix: # including normalized and non-normalized confusion matrix
+	L0 classification 
+	L1 melanoma vs. non-melanoma
+	L2 melanoma vs. non-melanoma
+	L1 classification
+	L2 classification
+_____________________________________________________________________________________________
+	
+
+
+
+
+
+
+			
