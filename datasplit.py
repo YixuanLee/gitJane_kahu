@@ -4,12 +4,10 @@ from doctest import OutputChecker
 from unittest import result
 import pandas as pd
 import numpy as np
-import os
 import argparse
 import pathlib
 import datetime
 from datetime import date
-import time
 
 # using today() to get current date
 datetoday = date.today()
